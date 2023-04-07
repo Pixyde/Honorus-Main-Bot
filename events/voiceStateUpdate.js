@@ -1,5 +1,17 @@
 const { Interaction, Collection, ChannelType } = require("discord.js");
+var cleanup = require("../utility/CleanUp").Cleanup(myCleanUp)
+const database = {
+  voiceTempSave: require("../database/voiceTempSave.json")
+}
+const { writeFileSync } = require("fs");
 voicetemp = new Collection();
+for (key in database.voiceTempSave) {
+  voicetemp.set(key, database.voiceTempSave[key].member)
+}
+writeFileSync("./database/voiceTempSave.json", '{}', async (err) => {
+  if (err)
+    console.log(err)
+})
 
 module.exports = {
   name: 'voiceStateUpdate',
@@ -35,6 +47,7 @@ module.exports = {
         creationChannelTournoi.permissionOverwrites.edit(user, {
           Connect: null
         })
+        voicetemp.delete(oldMember.channel.id)
         return oldMember.channel.delete()
       }
       else if (voicetemp.get(oldMember.channel.id) == oldMember.id && oldMember.channel.members.size > 0) {
@@ -48,7 +61,7 @@ module.exports = {
           ManageChannels: null,
           ManageRoles: null
         })
-        voicetemp.set(null, oldMember.id)
+        voicetemp.delete(oldMember.channel.id)
 
         const member = oldMember.channel.members.first()
 
@@ -62,3 +75,15 @@ module.exports = {
     }
   },
 };
+
+function myCleanUp() {
+  voicetemp.each(function(member, channel) {
+    database.voiceTempSave[channel] = {
+      member: member
+    }
+    writeFileSync("./database/voiceTempSave.json", JSON.stringify(database.voiceTempSave), async (err) => {
+      if (err)
+        console.log(err)
+    })
+  })
+}
